@@ -1,0 +1,333 @@
+// Learnify Platform Database Schema
+// PostgreSQL + Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// CATEGORIES
+// ========================================
+
+model Category {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  slug         String   @unique
+  icon         String
+  color        String
+  description  String?
+  coursesCount Int      @default(0)
+  courses      Course[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("categories")
+}
+
+// ========================================
+// COURSES
+// ========================================
+
+model Course {
+  id                String       @id @default(uuid())
+  title             String
+  slug              String       @unique
+  description       String       @db.Text
+  shortDescription  String
+  thumbnailUrl      String
+  videoIntroUrl     String?
+  categoryId        String
+  instructorId      String // Memberstack user ID
+  instructorName    String
+  instructorAvatar  String?
+  instructorBio     String?
+  price             Decimal      @db.Decimal(10, 2)
+  originalPrice     Decimal?     @db.Decimal(10, 2)
+  currency          String       @default("USD")
+  memberstackPlanId String? // Memberstack Plan ID for paid courses
+  duration          Int // in minutes
+  level             CourseLevel  @default(BEGINNER)
+  tags              String[]
+  rating            Float        @default(0.0)
+  reviewsCount      Int          @default(0)
+  studentsCount     Int          @default(0)
+  whatYouWillLearn  String[]
+  requirements      String[]
+  hasCertificate    Boolean      @default(true)
+  isPaid            Boolean      @default(true)
+  isPublished       Boolean      @default(false)
+  isPopular         Boolean      @default(false)
+  isNew             Boolean      @default(false)
+  colorScheme       ColorScheme  @default(PURPLE)
+  
+  // Relations
+  category          Category     @relation(fields: [categoryId], references: [id])
+  lessons           Lesson[]
+  enrollments       Enrollment[]
+  reviews           Review[]
+  wishlists         Wishlist[]
+  payments          Payment[]
+  
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([isPublished])
+  @@index([memberstackPlanId])
+  @@map("courses")
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ColorScheme {
+  PURPLE
+  YELLOW
+  ORANGE
+  PINK
+  GRAY
+  BLACK
+}
+
+// ========================================
+// LESSONS
+// ========================================
+
+model Lesson {
+  id          String          @id @default(uuid())
+  courseId    String
+  title       String
+  slug        String
+  description String
+  content     String          @db.Text
+  videoUrl    String?
+  vimeoId     String?
+  vimeoHash   String?
+  duration    Int // in minutes
+  order       Int
+  type        LessonType      @default(VIDEO)
+  isPreview   Boolean         @default(false)
+  resources   Json? // Array of { title, type, url }
+  
+  // Relations
+  course      Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progresses  LessonProgress[]
+  comments    Comment[]
+  
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([courseId, slug])
+  @@index([courseId])
+  @@index([order])
+  @@map("lessons")
+}
+
+enum LessonType {
+  VIDEO
+  TEXT
+  MIXED
+  QUIZ
+}
+
+// ========================================
+// ENROLLMENTS
+// ========================================
+
+model Enrollment {
+  id              String           @id @default(uuid())
+  userId          String // Memberstack user ID
+  userName        String
+  userEmail       String
+  courseId        String
+  progress        Int              @default(0) // 0-100%
+  enrolledAt      DateTime         @default(now())
+  completedAt     DateTime?
+  lastAccessedAt  DateTime         @default(now())
+  currentLessonId String?
+  planConnectionId String? // Memberstack Plan Connection ID (if paid via Memberstack)
+  
+  // Relations
+  course          Course           @relation(fields: [courseId], references: [id])
+  lessonProgress  LessonProgress[]
+  
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([planConnectionId])
+  @@map("enrollments")
+}
+
+// ========================================
+// LESSON PROGRESS
+// ========================================
+
+model LessonProgress {
+  id           String      @id @default(uuid())
+  enrollmentId String
+  lessonId     String
+  completed    Boolean     @default(false)
+  completedAt  DateTime?
+  
+  // Relations
+  enrollment   Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson       Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId])
+  @@map("lesson_progress")
+}
+
+// ========================================
+// REVIEWS
+// ========================================
+
+model Review {
+  id         String   @id @default(uuid())
+  userId     String // Memberstack user ID
+  userName   String
+  userAvatar String?
+  courseId   String
+  rating     Int // 1-5
+  comment    String   @db.Text
+  isPublished Boolean @default(true)
+  
+  // Relations
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, courseId]) // One review per user per course
+  @@index([courseId])
+  @@index([rating])
+  @@map("reviews")
+}
+
+// ========================================
+// CERTIFICATES
+// ========================================
+
+model Certificate {
+  id                String   @id @default(uuid())
+  userId            String // Memberstack user ID
+  userName          String
+  courseId          String
+  courseName        String
+  instructorName    String
+  certificateNumber String   @unique
+  verificationCode  String   @unique
+  pdfUrl            String?
+  issuedAt          DateTime @default(now())
+  
+  @@index([userId])
+  @@index([verificationCode])
+  @@map("certificates")
+}
+
+// ========================================
+// WISHLIST
+// ========================================
+
+model Wishlist {
+  id       String   @id @default(uuid())
+  userId   String // Memberstack user ID
+  courseId String
+  addedAt  DateTime @default(now())
+  
+  // Relations
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@map("wishlists")
+}
+
+// ========================================
+// PAYMENTS
+// ========================================
+
+model Payment {
+  id                  String        @id @default(uuid())
+  userId              String // Memberstack user ID
+  userEmail           String?
+  courseId            String
+  amount              Decimal       @db.Decimal(10, 2)
+  currency            String        @default("USD")
+  status              PaymentStatus @default(PENDING)
+  
+  // Memberstack + Stripe integration fields
+  memberstackPlanId   String? // Memberstack Plan ID
+  planConnectionId    String? // Memberstack Plan Connection ID
+  stripePaymentIntent String? // Stripe Payment Intent (handled by Memberstack)
+  
+  // Relations
+  course              Course        @relation(fields: [courseId], references: [id])
+  
+  createdAt           DateTime      @default(now())
+  completedAt         DateTime?
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@index([planConnectionId])
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ========================================
+// COMMENTS
+// ========================================
+
+model Comment {
+  id        String    @id @default(uuid())
+  userId    String // Memberstack user ID
+  userName  String
+  userAvatar String?
+  lessonId  String
+  content   String    @db.Text
+  parentId  String? // For nested comments (replies)
+  isEdited  Boolean   @default(false)
+  
+  // Relations
+  lesson    Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([lessonId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// ========================================
+// PLATFORM STATS (for admin dashboard)
+// ========================================
+
+model PlatformStats {
+  id            String   @id @default(uuid())
+  totalCourses  Int      @default(0)
+  totalStudents Int      @default(0)
+  totalRevenue  Decimal  @db.Decimal(12, 2) @default(0)
+  totalReviews  Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  @@map("platform_stats")
+}

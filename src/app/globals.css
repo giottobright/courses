@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply text-neutral-dark;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-6 py-3 rounded-full font-semibold transition-all duration-300 inline-flex items-center justify-center gap-2;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent-orange text-white hover:bg-accent-orange-light hover:shadow-lg hover:scale-105;
+  }
+
+  .btn-secondary {
+    @apply btn bg-primary-purple text-white hover:bg-primary-400 hover:shadow-lg hover:scale-105;
+  }
+
+  .btn-outline {
+    @apply btn border-2 border-neutral-dark text-neutral-dark hover:bg-neutral-dark hover:text-white;
+  }
+
+  .card {
+    @apply bg-white rounded-3xl p-6 shadow-soft hover:shadow-card transition-all duration-300;
+  }
+
+  .card-colored {
+    @apply rounded-3xl p-6 shadow-soft hover:shadow-card transition-all duration-300;
+  }
+
+  .badge {
+    @apply px-4 py-1.5 rounded-full text-sm font-semibold inline-flex items-center gap-1;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary-500 focus:outline-none transition-colors;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24 lg:py-32;
+  }
+
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-accent-pink bg-clip-text text-transparent;
+  }
+
+  .bg-gradient-primary {
+    @apply bg-gradient-to-br from-primary-purple to-primary-600;
+  }
+
+  .bg-gradient-warm {
+    @apply bg-gradient-to-br from-accent-orange to-accent-yellow;
+  }
+
+  .bg-gradient-soft {
+    @apply bg-gradient-to-br from-primary-100 to-accent-yellow/20;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #b4a0d8;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+}
+
+/* Smooth animations */
+* {
+  @apply transition-colors duration-200;
+}
+
+/* Remove default animations from interactive elements */
+button, a, input, select, textarea {
+  @apply transition-all duration-300;
+}
