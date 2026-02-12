@@ -723,7 +723,7 @@ DATABASE_URL="postgresql://postgres:ВАШ_ПАРОЛЬ_БД@ваш-хост.tim
 # ========================================
 # APPLICATION
 # ========================================
-NEXT_PUBLIC_APP_URL="https://ваш-домен.ru"
+123="https://ваш-домен.ru"
 NEXT_PUBLIC_APP_NAME="Learnify"
 NODE_ENV="production"
 
