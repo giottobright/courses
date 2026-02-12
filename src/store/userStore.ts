@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface UserProgress {
   courseId: string;
@@ -35,6 +35,22 @@ interface UserState {
   completeCourse: (courseId: string) => void;
   getCourseProgress: (courseId: string) => UserProgress | undefined;
 }
+
+// Safe storage wrapper for SSR compatibility
+const safeStorage = {
+  getItem: (name: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(name);
+  },
+  setItem: (name: string, value: string): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(name, value);
+  },
+  removeItem: (name: string): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(name);
+  },
+};
 
 export const useUserStore = create<UserState>()(
   persist(
@@ -150,6 +166,7 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: 'learnify-user-storage',
+      storage: createJSONStorage(() => safeStorage),
     }
   )
 );

@@ -22,6 +22,11 @@ export async function generateCertificatePDF(
   elementId: string,
   certificateData: CertificateData
 ): Promise<void> {
+  // Check if running in browser
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    throw new Error('generateCertificatePDF can only be called in browser environment');
+  }
+
   try {
     // Dynamic imports to keep bundle size small
     const html2canvas = (await import('html2canvas')).default;
@@ -88,6 +93,12 @@ export async function shareCertificate(
   certificateUrl: string,
   courseName: string
 ): Promise<void> {
+  // Check if running in browser
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    console.warn('shareCertificate called on server-side');
+    return;
+  }
+
   const shareData = {
     title: `I completed ${courseName}!`,
     text: `I just earned my certificate for ${courseName} on Learnify! 🎓`,
