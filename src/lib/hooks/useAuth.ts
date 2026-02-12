@@ -18,20 +18,33 @@ export function useAuth() {
 
   useEffect(() => {
     async function loadUser() {
+      console.log('🔄 [useAuth] Loading user...');
       try {
         const memberstackUser = await getCurrentMemberstackUser();
+        
         if (memberstackUser) {
+          console.log('✅ [useAuth] User loaded successfully:', {
+            id: memberstackUser.id,
+            email: memberstackUser.auth.email,
+            name: memberstackUser.customFields?.name,
+          });
+          
           setUser({
             id: memberstackUser.id,
             email: memberstackUser.auth.email,
             name: memberstackUser.customFields?.name || 'User',
             avatar: memberstackUser.customFields?.avatar,
           });
+        } else {
+          console.log('ℹ️ [useAuth] No user logged in');
+          setUser(null);
         }
       } catch (error) {
-        console.error('Failed to load user:', error);
+        console.error('❌ [useAuth] Failed to load user:', error);
+        setUser(null);
       } finally {
         setLoading(false);
+        console.log('✅ [useAuth] Auth check complete');
       }
     }
 

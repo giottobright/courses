@@ -2,14 +2,24 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { signInWithMemberstack, signUpWithMemberstack } from '@/lib/memberstack';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Form fields
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-purple via-primary-300 to-primary-lilac flex items-center justify-center p-4">
@@ -79,17 +89,65 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Memberstack Integration Note */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <Sparkles className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
-                <div className="text-sm text-blue-900">
-                  <strong>Integration Note:</strong> This form will be connected to Memberstack for authentication. Configure your Memberstack app and add the credentials to <code className="bg-blue-100 px-1 rounded">.env.local</code>
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+                  <div className="text-sm text-red-900">
+                    <strong>Error:</strong> {error}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <form className="space-y-4">
+            <form 
+              className="space-y-4" 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                console.log('📝 [LoginPage] Form submitted:', { isLogin, email });
+                
+                setError(null);
+                setLoading(true);
+
+                try {
+                  if (isLogin) {
+                    // Login
+                    console.log('🔐 [LoginPage] Attempting login...');
+                    const result = await signInWithMemberstack(email, password);
+                    
+                    if (result.success) {
+                      console.log('✅ [LoginPage] Login successful, redirecting...');
+                      // Redirect to dashboard or home
+                      router.push('/courses');
+                      router.refresh(); // Refresh to update auth state
+                    } else {
+                      console.error('❌ [LoginPage] Login failed:', result.error);
+                      setError(result.error || 'Login failed. Please check your credentials.');
+                    }
+                  } else {
+                    // Signup
+                    console.log('📝 [LoginPage] Attempting signup...');
+                    const result = await signUpWithMemberstack(email, password, name);
+                    
+                    if (result.success) {
+                      console.log('✅ [LoginPage] Signup successful, redirecting...');
+                      // Redirect to dashboard or home
+                      router.push('/courses');
+                      router.refresh(); // Refresh to update auth state
+                    } else {
+                      console.error('❌ [LoginPage] Signup failed:', result.error);
+                      setError(result.error || 'Signup failed. Please try again.');
+                    }
+                  }
+                } catch (err: any) {
+                  console.error('❌ [LoginPage] Unexpected error:', err);
+                  setError(err.message || 'An unexpected error occurred. Please try again.');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
               {!isLogin && (
                 <div>
                   <label className="block text-sm font-semibold mb-2">Full Name</label>
@@ -97,6 +155,9 @@ export default function LoginPage() {
                     type="text"
                     placeholder="Alex Johnson"
                     className="input"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required={!isLogin}
                   />
                 </div>
               )}
@@ -109,6 +170,9 @@ export default function LoginPage() {
                     type="email"
                     placeholder="your@email.com"
                     className="input pl-12"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -121,6 +185,10 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     className="input pl-12 pr-12"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
                   />
                   <button
                     type="button"
@@ -144,8 +212,14 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <Button variant="primary" size="lg" fullWidth>
-                {isLogin ? 'Sign In' : 'Create Account'}
+              <Button 
+                variant="primary" 
+                size="lg" 
+                fullWidth
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
               </Button>
             </form>
 
@@ -180,8 +254,13 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center">
               <button
-                onClick={() => setIsLogin(!isLogin)}
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError(null);
+                }}
                 className="text-gray-600 hover:text-neutral-dark"
+                disabled={loading}
               >
                 {isLogin ? (
                   <>Don't have an account? <span className="text-primary-600 font-semibold">Sign up</span></>

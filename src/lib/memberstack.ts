@@ -69,27 +69,42 @@ export function isMemberstackConfigured(): boolean {
  * In production, this would interact with the Memberstack SDK
  */
 export async function getCurrentMemberstackUser(): Promise<MemberstackUser | null> {
-  // This is a placeholder for the actual Memberstack SDK call
-  // In production, you would use:
-  // const memberstack = window.$memberstackDom;
-  // const { data: member } = await memberstack.getCurrentMember();
-  // return member;
-
-  console.log('Memberstack: Getting current user (mock)');
+  console.log('🔍 [Memberstack] Getting current user...');
   
-  // Mock user for development
-  const mockUser: MemberstackUser = {
-    id: 'user_123',
-    auth: {
-      email: 'demo@learnify.com',
-    },
-    customFields: {
-      name: 'Demo User',
-      avatar: '👤',
-    },
-  };
+  try {
+    const memberstack = getMemberstackInstance();
+    
+    if (!memberstack) {
+      console.warn('⚠️ [Memberstack] SDK not loaded yet, returning null');
+      return null;
+    }
 
-  return mockUser;
+    console.log('✅ [Memberstack] SDK instance found, fetching current member...');
+    const { data: member } = await memberstack.getCurrentMember();
+    
+    if (!member) {
+      console.log('ℹ️ [Memberstack] No logged in member found');
+      return null;
+    }
+
+    console.log('✅ [Memberstack] User loaded:', {
+      id: member.id,
+      email: member.auth?.email,
+      customFields: member.customFields,
+    });
+
+    return {
+      id: member.id,
+      auth: {
+        email: member.auth?.email || '',
+      },
+      customFields: member.customFields,
+      planConnections: member.planConnections,
+    };
+  } catch (error) {
+    console.error('❌ [Memberstack] Error getting current user:', error);
+    return null;
+  }
 }
 
 /**
@@ -101,26 +116,59 @@ export async function signInWithMemberstack(
   email: string,
   password: string
 ): Promise<{ success: boolean; user?: MemberstackUser; error?: string }> {
-  // This is a placeholder for the actual Memberstack SDK call
-  // In production, you would use:
-  // const memberstack = window.$memberstackDom;
-  // const { data: member } = await memberstack.loginMemberEmailPassword({ email, password });
-  // return { success: true, user: member };
-
-  console.log('Memberstack: Sign in attempt (mock)', { email });
+  console.log('🔐 [Memberstack] Sign in attempt:', { email });
   
-  // Mock authentication
-  return {
-    success: true,
-    user: {
-      id: 'user_123',
-      auth: { email },
-      customFields: {
-        name: 'Demo User',
-        avatar: '👤',
+  try {
+    const memberstack = getMemberstackInstance();
+    
+    if (!memberstack) {
+      const error = 'Memberstack SDK not loaded. Please check your configuration.';
+      console.error('❌ [Memberstack]', error);
+      return { success: false, error };
+    }
+
+    console.log('📤 [Memberstack] Sending login request to Memberstack API...');
+    const { data: member } = await memberstack.loginMemberEmailPassword({ 
+      email, 
+      password 
+    });
+    
+    if (!member) {
+      console.warn('⚠️ [Memberstack] Login returned no member data');
+      return { 
+        success: false, 
+        error: 'Login failed - no user data returned' 
+      };
+    }
+
+    console.log('✅ [Memberstack] Login successful:', {
+      id: member.id,
+      email: member.auth?.email,
+      customFields: member.customFields,
+    });
+
+    return {
+      success: true,
+      user: {
+        id: member.id,
+        auth: { email: member.auth?.email || email },
+        customFields: member.customFields,
+        planConnections: member.planConnections,
       },
-    },
-  };
+    };
+  } catch (error: any) {
+    console.error('❌ [Memberstack] Login error:', {
+      message: error.message,
+      code: error.code,
+      type: error.type,
+      fullError: error,
+    });
+    
+    return { 
+      success: false, 
+      error: error.message || 'Login failed. Please check your credentials.' 
+    };
+  }
 }
 
 /**
@@ -134,41 +182,81 @@ export async function signUpWithMemberstack(
   password: string,
   name: string
 ): Promise<{ success: boolean; user?: MemberstackUser; error?: string }> {
-  // This is a placeholder for the actual Memberstack SDK call
-  // In production, you would use:
-  // const memberstack = window.$memberstackDom;
-  // const { data: member } = await memberstack.signupMemberEmailPassword({
-  //   email,
-  //   password,
-  //   customFields: { name }
-  // });
-  // return { success: true, user: member };
-
-  console.log('Memberstack: Sign up attempt (mock)', { email, name });
+  console.log('📝 [Memberstack] Sign up attempt:', { email, name });
   
-  return {
-    success: true,
-    user: {
-      id: 'user_' + Date.now(),
-      auth: { email },
-      customFields: {
-        name,
-        avatar: '👤',
+  try {
+    const memberstack = getMemberstackInstance();
+    
+    if (!memberstack) {
+      const error = 'Memberstack SDK not loaded. Please check your configuration.';
+      console.error('❌ [Memberstack]', error);
+      return { success: false, error };
+    }
+
+    console.log('📤 [Memberstack] Sending signup request to Memberstack API...');
+    const { data: member } = await memberstack.signupMemberEmailPassword({
+      email,
+      password,
+      customFields: { name }
+    });
+    
+    if (!member) {
+      console.warn('⚠️ [Memberstack] Signup returned no member data');
+      return { 
+        success: false, 
+        error: 'Signup failed - no user data returned' 
+      };
+    }
+
+    console.log('✅ [Memberstack] Signup successful:', {
+      id: member.id,
+      email: member.auth?.email,
+      customFields: member.customFields,
+    });
+
+    return {
+      success: true,
+      user: {
+        id: member.id,
+        auth: { email: member.auth?.email || email },
+        customFields: member.customFields,
+        planConnections: member.planConnections,
       },
-    },
-  };
+    };
+  } catch (error: any) {
+    console.error('❌ [Memberstack] Signup error:', {
+      message: error.message,
+      code: error.code,
+      type: error.type,
+      fullError: error,
+    });
+    
+    return { 
+      success: false, 
+      error: error.message || 'Signup failed. Please try again.' 
+    };
+  }
 }
 
 /**
  * Sign out from Memberstack
  */
 export async function signOutMemberstack(): Promise<void> {
-  // This is a placeholder for the actual Memberstack SDK call
-  // In production, you would use:
-  // const memberstack = window.$memberstackDom;
-  // await memberstack.logout();
+  console.log('🚪 [Memberstack] Sign out...');
+  
+  try {
+    const memberstack = getMemberstackInstance();
+    
+    if (!memberstack) {
+      console.warn('⚠️ [Memberstack] SDK not loaded, clearing session...');
+      return;
+    }
 
-  console.log('Memberstack: Sign out (mock)');
+    await memberstack.logout();
+    console.log('✅ [Memberstack] Logged out successfully');
+  } catch (error) {
+    console.error('❌ [Memberstack] Logout error:', error);
+  }
 }
 
 /**
