@@ -6,38 +6,83 @@
 ## Внесенные исправления
 
 ### 1. ✅ src/store/userStore.ts
-**Проблема:** Zustand с `persist` middleware пытался использовать `localStorage` на сервере.
+**Проблема:** Zustand с `persist` middleware пытался использовать `localStorage` на сервере во время сборки.
 
-**Решение:** Создана безопасная обертка для storage с проверкой на клиентскую среду:
+**Решение:** Используется **условное применение persist middleware** - он применяется ТОЛЬКО на клиенте:
 
 ```typescript
+import { create, StateCreator } from 'zustand';
+import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
+
 // Safe storage wrapper for SSR compatibility
-const safeStorage = {
+const safeStorage: StateStorage = {
   getItem: (name: string): string | null => {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem(name);
+    try {
+      return localStorage.getItem(name);
+    } catch {
+      return null;
+    }
   },
   setItem: (name: string, value: string): void => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(name, value);
+    try {
+      localStorage.setItem(name, value);
+    } catch (e) {
+      console.warn('Failed to save to localStorage:', e);
+    }
   },
   removeItem: (name: string): void => {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem(name);
+    try {
+      localStorage.removeItem(name);
+    } catch (e) {
+      console.warn('Failed to remove from localStorage:', e);
+    }
   },
 };
 
-// Использование в Zustand store:
-export const useUserStore = create<UserState>()(
-  persist(
-    (set, get) => ({ ... }),
-    {
-      name: 'learnify-user-storage',
-      storage: createJSONStorage(() => safeStorage),
-    }
-  )
-);
+// Store definition with proper TypeScript typing
+const storeDefinition: StateCreator<UserState> = (set, get) => ({
+  user: null,
+  userProgress: [],
+  isAuthenticated: false,
+  
+  setUser: (user: User | null) => set({ 
+    user, 
+    isAuthenticated: !!user 
+  }),
+  
+  // ... other actions with proper typing
+  enrollInCourse: (courseId: string) => set((state: UserState) => {
+    // ... implementation
+  }),
+  
+  getCourseProgress: (courseId: string) => {
+    return get().userProgress.find((p) => p.courseId === courseId);
+  },
+});
+
+// Conditional persist middleware - ONLY on client!
+export const useUserStore = 
+  typeof window !== 'undefined'
+    ? create<UserState>()(
+        persist(storeDefinition, {
+          name: 'learnify-user-storage',
+          storage: createJSONStorage(() => safeStorage),
+          skipHydration: true, // Important for SSR
+        })
+      )
+    : create<UserState>()(storeDefinition); // Server: no persist
 ```
+
+**Ключевые моменты:**
+- ✅ `persist` middleware применяется ТОЛЬКО когда `window` доступен (только на клиенте)
+- ✅ На сервере используется обычный store без persist
+- ✅ `skipHydration: true` предотвращает проблемы гидратации
+- ✅ `try/catch` блоки защищают от ошибок localStorage
+- ✅ **Правильная TypeScript типизация** с `StateCreator<UserState>` вместо `any`
+- ✅ Все параметры функций типизированы корректно
 
 ### 2. ✅ src/lib/certificate.ts
 **Проблема:** Функции использовали `document` и `navigator` без проверки на серверную среду.
@@ -69,13 +114,63 @@ if (typeof window === 'undefined' || typeof navigator === 'undefined') {
 
 ## Как работает решение
 
-### 1. Безопасная обертка для localStorage
-Вместо прямого обращения к `localStorage`, используется безопасная обертка, которая:
-- Проверяет наличие `window` (браузерная среда)
-- Возвращает `null` или не выполняет действие, если код выполняется на сервере
-- Работает нормально в браузере
+### 1. Условное применение persist middleware
+**Главное решение:** persist middleware применяется ТОЛЬКО на клиенте:
 
-### 2. Проверки браузерного окружения
+```typescript
+export const useUserStore = 
+  typeof window !== 'undefined'
+    ? create(persist(...))  // Client: with localStorage
+    : create(...)           // Server: without localStorage
+```
+
+Это означает:
+- ✅ На **сервере** (во время сборки): store работает БЕЗ persist, localStorage не вызывается
+- ✅ На **клиенте** (в браузере): store работает С persist, сохраняет данные в localStorage
+- ✅ Нет попыток использовать localStorage там, где его нет
+
+### 2. Безопасная обертка для localStorage
+Дополнительная защита с `try/catch` блоками:
+- Проверяет наличие `window` (браузерная среда)
+- Ловит исключения при работе с localStorage (например, если квота превышена)
+- Возвращает `null` или не выполняет действие при ошибках
+
+### 3. Правильная TypeScript типизация
+**Важно!** Используйте `StateCreator<UserState>` для корректной типизации:
+
+```typescript
+import { create, StateCreator } from 'zustand';
+
+// ❌ Неправильно - вызовет ошибки TypeScript
+const storeDefinition = (set: any, get: any) => ({ ... });
+
+// ✅ Правильно - TypeScript знает все типы
+const storeDefinition: StateCreator<UserState> = (set, get) => ({
+  user: null,
+  userProgress: [],
+  isAuthenticated: false,
+  
+  setUser: (user: User | null) => set({ user, isAuthenticated: !!user }),
+  
+  enrollInCourse: (courseId: string) => set((state: UserState) => {
+    // state полностью типизирован
+    if (!state.user) return state;
+    // ...
+  }),
+});
+```
+
+Это предотвратит ошибки компиляции TypeScript:
+- `Type 'StateCreator<...>' is not assignable to parameter`
+- `Type 'User | null' is not assignable to type 'null'`
+
+### 4. skipHydration для предотвращения проблем гидратации
+Опция `skipHydration: true` важна, потому что:
+- Сервер и клиент имеют разные версии store (с persist и без)
+- `skipHydration` предотвращает автоматическую гидратацию при первом рендере
+- Store синхронизируется с localStorage после монтирования на клиенте
+
+### 5. Проверки браузерного окружения
 Все функции, использующие браузерные API (`window`, `document`, `navigator`, `localStorage`), должны иметь проверку:
 
 ```typescript
@@ -86,7 +181,7 @@ if (typeof window === 'undefined') {
 // Безопасно использовать браузерные API
 ```
 
-### 3. Client-side компоненты
+### 6. Client-side компоненты
 Компоненты, которые используют браузерные API или хуки (`useState`, `useEffect`), должны иметь директиву `'use client'` в начале файла.
 
 ## Тестирование
@@ -109,6 +204,36 @@ if (typeof window === 'undefined') {
    docker build -t courses-app .
    docker run -p 3000:3000 courses-app
    ```
+
+## Типичные ошибки и их решения
+
+### TypeScript ошибка: "Type is not assignable"
+
+**Ошибка:**
+```
+Type error: Argument of type 'StateCreator<...>' is not assignable to parameter
+Type 'User | null' is not assignable to type 'null'
+```
+
+**Причина:** Использование `any` вместо правильных типов в `storeDefinition`.
+
+**Решение:**
+```typescript
+// ❌ Неправильно
+const storeDefinition = (set: any, get: any) => ({ ... });
+
+// ✅ Правильно
+import { StateCreator } from 'zustand';
+const storeDefinition: StateCreator<UserState> = (set, get) => ({ ... });
+```
+
+### ReferenceError: localStorage is not defined
+
+**Причина:** Обращение к localStorage на сервере.
+
+**Решение:** Условное применение persist middleware (см. выше).
+
+---
 
 ## Важные правила для предотвращения подобных ошибок
 
@@ -138,6 +263,30 @@ export default function Page() {
   }, []);
 }
 ```
+
+## Дополнительно: Ручная гидратация (если нужна)
+
+Если вам нужно вручную гидратировать store (из-за `skipHydration: true`), добавьте в компонент:
+
+```typescript
+'use client';
+
+import { useEffect } from 'react';
+import { useUserStore } from '@/store/userStore';
+
+export default function MyComponent() {
+  useEffect(() => {
+    // Гидратация store из localStorage на клиенте
+    if (typeof window !== 'undefined') {
+      useUserStore.persist.rehydrate();
+    }
+  }, []);
+  
+  // ... остальной код
+}
+```
+
+Однако в большинстве случаев это **не требуется**, так как Zustand автоматически загружает данные из localStorage при первом обращении к store на клиенте.
 
 ## Альтернативные решения
 

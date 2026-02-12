@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import memberstackDOM from '@memberstack/dom';
 
 export default function MemberstackProvider() {
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
     const publicKey = process.env.NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY;
 
     if (!publicKey) {
@@ -12,17 +14,24 @@ export default function MemberstackProvider() {
       return;
     }
 
-    // Initialize Memberstack
-    const memberstack = memberstackDOM.init({
-      publicKey,
-    });
+    // Dynamically import Memberstack ONLY on client side
+    import('@memberstack/dom')
+      .then((memberstackModule) => {
+        const memberstackDOM = memberstackModule.default;
+        
+        // Initialize Memberstack
+        const memberstack = memberstackDOM.init({
+          publicKey,
+        });
 
-    // Make it globally available
-    if (typeof window !== 'undefined') {
-      (window as any).memberstack = memberstack;
-    }
+        // Make it globally available
+        (window as any).memberstack = memberstack;
 
-    console.log('Memberstack initialized successfully');
+        console.log('Memberstack initialized successfully');
+      })
+      .catch((error) => {
+        console.error('Failed to load Memberstack:', error);
+      });
   }, []);
 
   return null;

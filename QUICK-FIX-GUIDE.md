@@ -3,9 +3,11 @@
 ## ✅ Что было исправлено
 
 ### 1. `src/store/userStore.ts` 
-- ✅ Добавлена безопасная обертка `safeStorage` для localStorage
-- ✅ Настроен Zustand persist middleware для работы с SSR
-- ✅ Теперь работает как на сервере, так и на клиенте
+- ✅ **Условное применение persist middleware** - только на клиенте
+- ✅ Добавлена безопасная обертка `safeStorage` с try/catch
+- ✅ Используется `skipHydration: true` для предотвращения проблем гидратации
+- ✅ На сервере store работает БЕЗ persist (без localStorage)
+- ✅ На клиенте store работает С persist (с localStorage)
 
 ### 2. `src/lib/certificate.ts`
 - ✅ Добавлены проверки `typeof window !== 'undefined'` в функцию `generateCertificatePDF`
