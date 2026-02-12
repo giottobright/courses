@@ -1,7 +1,7 @@
 // Prisma Seed Script
 // Run: npx prisma db seed
 
-import { PrismaClient, CourseLevel, ColorScheme } from '@prisma/client';
+const { PrismaClient, CourseLevel, ColorScheme } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
