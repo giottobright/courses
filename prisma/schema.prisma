@@ -8,9 +8,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // SSL configuration for TimeWeb Cloud
-  // Accepts any SSL certificate to avoid connection issues
-  relationMode = "prisma"
 }
 
 // ========================================
