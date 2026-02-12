@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ВАЖНО: для деплоя на production серверах
-  output: 'standalone',
-  
   reactStrictMode: true,
   
   images: {
@@ -32,10 +29,13 @@ const nextConfig = {
   // Компрессия
   compress: true,
   
-  // Опционально: если используете custom server или прокси
-  // experimental: {
-  //   outputStandalone: true,
-  // },
+  // Важно: убедимся что статика правильно обслуживается
+  assetPrefix: undefined,
+  
+  // Для правильной работы CSS
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
 };
 
 export default nextConfig;
