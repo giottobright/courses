@@ -5,6 +5,15 @@ const nextConfig = {
   // Standalone output для Docker - критически важно для TimeWeb Cloud
   output: 'standalone',
   
+  // Явное указание публичных переменных окружения
+  // Важно для Timeweb Cloud - гарантирует доступность в браузере
+  env: {
+    NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY: process.env.NEXT_PUBLIC_MEMBERSTACK_PUBLIC_KEY,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
+    NEXT_PUBLIC_ADMIN_USER_IDS: process.env.NEXT_PUBLIC_ADMIN_USER_IDS,
+  },
+  
   images: {
     remotePatterns: [
       {
