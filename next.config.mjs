@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   
+  // Standalone output для Docker - критически важно для TimeWeb Cloud
+  output: 'standalone',
+  
   images: {
     remotePatterns: [
       {
