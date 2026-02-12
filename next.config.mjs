@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   
+  // Standalone output для Docker - оптимальный размер
+  output: 'standalone',
+  
   images: {
     remotePatterns: [
       {
@@ -28,9 +31,6 @@ const nextConfig = {
   
   // Компрессия
   compress: true,
-  
-  // Важно: убедимся что статика правильно обслуживается
-  assetPrefix: undefined,
   
   // Для правильной работы CSS
   experimental: {
