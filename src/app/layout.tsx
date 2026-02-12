@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import MemberstackProvider from "@/components/MemberstackProvider";
 import "./globals.css";
 
 const inter = Inter({ 
@@ -60,6 +61,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#b4a0d8" />
       </head>
       <body className={`${inter.className} antialiased bg-neutral-cream`}>
+        <MemberstackProvider />
         {children}
       </body>
     </html>
