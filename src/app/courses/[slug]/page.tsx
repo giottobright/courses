@@ -359,8 +359,16 @@ export default function CourseDetailPage() {
                 {/* Instructor */}
                 {course.instructor && (
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl">
-                      {course.instructor.avatar || '👤'}
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl overflow-hidden">
+                      {course.instructor.avatar && (course.instructor.avatar.startsWith('http') || course.instructor.avatar.startsWith('/')) ? (
+                        <img 
+                          src={course.instructor.avatar} 
+                          alt={course.instructor.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        course.instructor.avatar || '👤'
+                      )}
                     </div>
                     <div>
                       <div className="text-sm text-white/70">Instructor</div>
@@ -641,8 +649,16 @@ export default function CourseDetailPage() {
                 <Card>
                   <h3 className="text-xl font-display font-bold mb-4">Your Instructor</h3>
                   <div className="text-center">
-                    <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center text-4xl mx-auto mb-3">
-                      {course.instructor.avatar || '👤'}
+                    <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center text-4xl mx-auto mb-3 overflow-hidden">
+                      {course.instructor.avatar && (course.instructor.avatar.startsWith('http') || course.instructor.avatar.startsWith('/')) ? (
+                        <img 
+                          src={course.instructor.avatar} 
+                          alt={course.instructor.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        course.instructor.avatar || '👤'
+                      )}
                     </div>
                     <h4 className="font-bold text-lg mb-1">{course.instructor.name}</h4>
                     {course.instructor.title && (

@@ -123,8 +123,16 @@ export default function DashboardPage() {
             className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
           >
             <div className="flex items-center gap-6">
-              <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-4xl">
-                {user.avatar || '👤'}
+              <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-4xl overflow-hidden">
+                {user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('/')) ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user.avatar || '👤'
+                )}
               </div>
               <div>
                 <h1 className="text-4xl font-display font-bold mb-2">

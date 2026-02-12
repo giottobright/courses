@@ -239,8 +239,16 @@ export default function AdminUsersPage() {
               <Card hover>
                 <div className="flex items-center gap-6">
                   {/* Avatar */}
-                  <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-3xl flex-shrink-0">
-                    {user.avatar || user.name[0]}
+                  <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
+                    {user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('/')) ? (
+                      <img 
+                        src={user.avatar} 
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user.avatar || user.name[0]
+                    )}
                   </div>
 
                   {/* User Info */}
