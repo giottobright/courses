@@ -2,9 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Standalone output для Docker - оптимальный размер
-  output: 'standalone',
-  
   images: {
     remotePatterns: [
       {

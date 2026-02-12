@@ -8,6 +8,9 @@ import {
   sendPaymentReceiptEmail 
 } from '@/lib/email';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 // Memberstack sends webhooks for various events
 // Events we care about:
 // - member.plan.purchased - When a user purchases a plan (course)

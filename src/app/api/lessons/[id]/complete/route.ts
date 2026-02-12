@@ -6,6 +6,9 @@ import { prisma } from '@/lib/prisma';
 import { sendCertificateEmail } from '@/lib/email';
 import { generateCertificateId } from '@/lib/certificate';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
