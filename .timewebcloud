@@ -1,0 +1,7 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm ci && npm run build",
+  "outputDirectory": ".next/standalone",
+  "devDependencies": true,
+  "installCommand": "npm ci"
+}
